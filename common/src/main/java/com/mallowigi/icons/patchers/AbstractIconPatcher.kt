@@ -81,8 +81,7 @@ abstract class AbstractIconPatcher : IconPathPatcher() {
     @Suppress("UnstableApiUsage") val pluginName = (classLoader as? PluginClassLoader)?.pluginDescriptor?.name
     if (pluginName != null && IGNORED_PLUGINS.contains(pluginName)) return null
 
-    val patchedPath = getPatchedPath(path)
-    return if (!enabled) null else patchedPath
+    return getPatchedPath(path)
   }
 
   /** Check whether a png version of a resource exists. */
@@ -101,20 +100,21 @@ abstract class AbstractIconPatcher : IconPathPatcher() {
   @Suppress("kotlin:S1871", "HardCodedStringLiteral")
   private fun getPatchedPath(path: String): String? = when {
     !enabled -> null
-    path.contains("expui/gutter") -> getArrowReplacement(path)
     CACHE.containsKey(path) -> CACHE[path]
-    // First try the svg version of the resource
-    getSVG(path) != null -> {
-      CACHE[path] = getReplacement(path)
-      CACHE[path]
-    }
-    // Then try the png version
-    getPNG(path) != null -> {
-      CACHE[path] = getReplacement(path)
-      CACHE[path]
-    }
+    else -> {
+      val patchedPath = when {
+        path.contains("expui/gutter") -> getArrowReplacement(path)
+        // First try the svg version of the resource
+        getSVG(path) != null -> getReplacement(path)
+        // Then try the png version
+        getPNG(path) != null -> getReplacement(path)
 
-    else -> null
+        else -> null
+      }
+
+      CACHE[path] = patchedPath
+      patchedPath
+    }
   }
 
   private fun getArrowReplacement(path: String): String? {
